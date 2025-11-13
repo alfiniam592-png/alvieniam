@@ -1,1 +1,352 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Penilaian Harian TIK — Materi Sistem Komputer</title>
+  <style>
+    :root{
+      --bg: #e8f9e9;    /* hijau muda */
+      --accent: #0b6b3a;
+      --card: #ffffff;
+      --muted: #586b5f;
+      --success: #1e9b4a;
+      --danger: #c93a3a;
+      --glass: rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: linear-gradient(180deg,var(--bg) 0%, #f6fff6 100%); color:#0b2d1e;}
+    /* subtle informatika background: code stripes + nodes */
+    body::before{
+      content:"";
+      position:fixed; inset:0; z-index:0;
+      background-image:
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 40px),
+        radial-gradient(circle at 10% 10%, rgba(11,107,58,0.03), transparent 10%),
+        radial-gradient(circle at 90% 90%, rgba(11,107,58,0.02), transparent 12%);
+      pointer-events:none;
+    }
 
+    .wrap{max-width:980px; margin:28px auto; padding:20px; position:relative; z-index:1;}
+    header{display:flex; gap:14px; align-items:center; margin-bottom:14px;}
+    .logo{width:68px; height:68px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#fff,#e8fff0); box-shadow:0 8px 20px rgba(11,107,58,0.08); border:1px solid rgba(11,107,58,0.06); flex-shrink:0}
+    .logo strong{color:var(--accent); font-size:22px;}
+    h1{margin:0; font-size:20px; color:var(--accent)}
+    p.lead{margin:4px 0 0 0; color:var(--muted); font-size:14px}
+
+    .card{background:var(--card); border-radius:12px; padding:16px; box-shadow:0 12px 30px rgba(6,40,20,0.06); border:1px solid rgba(11,107,58,0.06); margin-bottom:12px;}
+    .flex{display:flex; gap:12px; align-items:center;}
+    .input-name{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+    input[type="text"]{padding:10px 12px; border-radius:10px; border:1px solid rgba(11,107,58,0.12); width:260px; font-size:14px}
+    .btn{padding:10px 14px; border-radius:10px; border:0; cursor:pointer; font-weight:600}
+    .btn-primary{background:var(--accent); color:#fff; box-shadow:0 8px 20px rgba(11,107,58,0.14)}
+    .btn-ghost{background:transparent; color:var(--accent); border:1px solid rgba(11,107,58,0.12)}
+    .small{font-size:13px; color:var(--muted)}
+
+    #quizArea{display:none}
+
+    .question{margin-bottom:12px; padding:12px; border-radius:10px; border:1px dashed rgba(11,107,58,0.06); background:linear-gradient(180deg,#fff,#fbfffb);}
+    .q-top{display:flex; justify-content:space-between; align-items:center; gap:8px}
+    .q-text{font-weight:700; color:#08331f}
+    .options{display:flex; flex-direction:column; gap:8px; margin-top:8px}
+    label.option{display:flex; gap:12px; align-items:center; padding:10px; border-radius:8px; cursor:pointer; transition:all .12s ease; border:1px solid transparent; background:linear-gradient(180deg,#ffffff,#fcfff9)}
+    label.option:hover{transform:translateY(-3px); box-shadow:0 12px 30px rgba(6,40,20,0.04)}
+    input[type="radio"]{transform:scale(1.05); accent-color:var(--accent)}
+
+    .controls{display:flex; gap:10px; margin-top:8px; flex-wrap:wrap}
+    #resultBox{display:none; margin-top:12px; padding:12px; border-radius:10px; background:linear-gradient(180deg,#f7fff7,#ffffff); border:1px solid rgba(11,107,58,0.06)}
+    .scoreBig{font-size:28px; font-weight:800}
+    .pass{color:var(--success)}
+    .fail{color:var(--danger)}
+
+    .footer{margin-top:14px; text-align:center; color:var(--muted); font-size:13px}
+
+    @media (max-width:720px){
+      .logo{width:56px;height:56px}
+      input[type="text"]{width:100%}
+      .wrap{padding:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"><strong>IT</strong></div>
+      <div>
+        <h1>Penilaian Harian TIK — Materi Sistem Komputer</h1>
+        <p class="lead">Kelas 7 • Pilih jawaban yang paling tepat</p>
+      </div>
+    </header>
+
+    <section class="card" aria-labelledby="intro">
+      <div id="intro" class="small">
+        Isi nama siswa lalu klik <strong>Mulai Kuis</strong> untuk memulai. Pilihan jawaban akan diacak saat halaman dimuat.
+      </div>
+
+      <div style="margin-top:12px" class="input-name">
+        <input id="studentName" type="text" placeholder="Tulis nama siswa (wajib)" aria-label="Nama siswa" />
+        <button id="startBtn" class="btn btn-primary">Mulai Kuis</button>
+        <button id="shuffleBtn" class="btn btn-ghost" title="Acak ulang pilihan jawaban">Acak Pilihan</button>
+        <div style="margin-left:auto" class="small">Nilai: 10 poin/benar • Maks 100</div>
+      </div>
+    </section>
+
+    <form id="quizArea" class="card" onsubmit="return false;" aria-live="polite">
+      <!-- questions injected here -->
+    </form>
+
+    <div class="controls" style="margin-top:6px">
+      <button id="checkBtn" class="btn btn-primary" style="display:none">Periksa Hasil</button>
+      <button id="retryBtn" class="btn btn-ghost" style="display:none">Ulangi Kuis</button>
+      <div id="note" class="small" style="margin-left:auto">Tema: hijau muda • Informatika</div>
+    </div>
+
+    <div id="resultBox" class="card" aria-live="polite">
+      <div id="resultHeader" style="display:flex; justify-content:space-between; align-items:center; gap:12px">
+        <div>
+          <div class="small">Nama Siswa</div>
+          <div id="resName" style="font-weight:700"></div>
+        </div>
+        <div style="text-align:right">
+          <div class="small">Total Skor</div>
+          <div id="resScore" class="scoreBig"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap;">
+        <div>
+          <div class="small">Benar</div>
+          <div id="resCorrect" style="font-weight:700"></div>
+        </div>
+        <div>
+          <div class="small">Persentase</div>
+          <div id="resPercent" style="font-weight:700"></div>
+        </div>
+        <div>
+          <div class="small">Status</div>
+          <div id="resStatus" style="font-weight:800"></div>
+        </div>
+      </div>
+
+      <div id="feedbackList" style="margin-top:12px" class="small"></div>
+    </div>
+
+    <div class="footer">
+      &copy; Penilaian TIK • Materi Sistem Komputer — Kunci: 1.A • 2.B • 3.C • 4.A • 5.B • 6.C • 7.C • 8.C • 9.C • 10.C
+    </div>
+  </div>
+
+  <script>
+    // Data soal dan jawaban (teks Indonesian)
+    const QUESTIONS = [
+      { id:1, q:"Sistem komputer terdiri dari tiga komponen utama, yaitu ....",
+        opts:["Hardware, Software, Brainware","CPU, Mouse, Keyboard","Input, Output, Storage","Monitor, Printer, Scanner"],
+        correct:"Hardware, Software, Brainware" },
+      { id:2, q:"Bagian komputer yang dapat disentuh secara fisik disebut ....",
+        opts:["Software","Hardware","Brainware","Firmware"],
+        correct:"Hardware" },
+      { id:3, q:"Program atau instruksi yang digunakan untuk mengendalikan perangkat keras disebut ....",
+        opts:["Brainware","Hardware","Software","Storage"],
+        correct:"Software" },
+      { id:4, q:"Orang yang menggunakan atau mengoperasikan komputer disebut ....",
+        opts:["Brainware","Hardware","Software","Firmware"],
+        correct:"Brainware" },
+      { id:5, q:"Berikut ini yang termasuk perangkat masukan (input device) adalah ....",
+        opts:["Monitor dan Printer","Scanner dan Keyboard","CPU dan Harddisk","Speaker dan Proyektor"],
+        correct:"Scanner dan Keyboard" },
+      { id:6, q:"Fungsi CPU (Central Processing Unit) adalah ....",
+        opts:["Menyimpan data sementara","Menyimpan data permanen","Mengolah data dan menjalankan instruksi","Menampilkan hasil keluaran"],
+        correct:"Mengolah data dan menjalankan instruksi" },
+      { id:7, q:"Contoh perangkat keluaran (output device) adalah ....",
+        opts:["Mouse","Scanner","Printer","Flashdisk"],
+        correct:"Printer" },
+      { id:8, q:"Bagian komputer yang berfungsi menyimpan data dan program secara permanen adalah ....",
+        opts:["RAM","ROM","Harddisk","CPU"],
+        correct:"Harddisk" },
+      { id:9, q:"Yang dimaksud dengan sistem komputer adalah ....",
+        opts:["Kumpulan perangkat keras komputer saja","Gabungan perangkat keras dan lunak saja","Gabungan perangkat keras, lunak, dan manusia yang bekerja bersama untuk mengolah data","Perangkat untuk mengetik dokumen"],
+        correct:"Gabungan perangkat keras, lunak, dan manusia yang bekerja bersama untuk mengolah data" },
+      { id:10, q:"Salah satu contoh software sistem operasi adalah ....",
+        opts:["Microsoft Word","Google Chrome","Windows 10","Corel Draw"],
+        correct:"Windows 10" }
+    ];
+
+    // Utility shuffle (Fisher-Yates)
+    function shuffle(arr){
+      const a = arr.slice();
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // Elements
+    const startBtn = document.getElementById('startBtn');
+    const studentNameInput = document.getElementById('studentName');
+    const quizArea = document.getElementById('quizArea');
+    const checkBtn = document.getElementById('checkBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resultBox = document.getElementById('resultBox');
+    const resName = document.getElementById('resName');
+    const resScore = document.getElementById('resScore');
+    const resCorrect = document.getElementById('resCorrect');
+    const resPercent = document.getElementById('resPercent');
+    const resStatus = document.getElementById('resStatus');
+    const feedbackList = document.getElementById('feedbackList');
+
+    let rendered = []; // will store {id, correct, radioName}
+
+    function renderQuiz(shuffleOptions=true){
+      quizArea.innerHTML = "";
+      rendered = [];
+      // for each question, render with options possibly shuffled
+      QUESTIONS.forEach((qq, idx) => {
+        const container = document.createElement('div');
+        container.className = "question";
+        container.dataset.qid = qq.id;
+
+        const top = document.createElement('div');
+        top.className = "q-top";
+        const qText = document.createElement('div');
+        qText.className = "q-text";
+        qText.textContent = `${idx+1}. ${qq.q}`;
+        const qNote = document.createElement('div');
+        qNote.className = "small";
+        qNote.textContent = `Soal ${idx+1}`;
+        top.appendChild(qText);
+        top.appendChild(qNote);
+
+        container.appendChild(top);
+
+        const optsWrap = document.createElement('div');
+        optsWrap.className = "options";
+
+        const opts = shuffleOptions ? shuffle(qq.opts) : qq.opts.slice();
+        const radioName = `q_${qq.id}`;
+
+        opts.forEach((opt, i) => {
+          const id = `${radioName}_opt_${i}`;
+          const label = document.createElement('label');
+          label.className = "option";
+          label.htmlFor = id;
+
+          const radio = document.createElement('input');
+          radio.type = "radio";
+          radio.name = radioName;
+          radio.id = id;
+          radio.value = opt;
+
+          const span = document.createElement('span');
+          span.textContent = opt;
+
+          label.appendChild(radio);
+          label.appendChild(span);
+          optsWrap.appendChild(label);
+        });
+
+        container.appendChild(optsWrap);
+        quizArea.appendChild(container);
+
+        rendered.push({ id: qq.id, correct: qq.correct, radioName });
+      });
+
+      // show controls
+      quizArea.style.display = 'block';
+      checkBtn.style.display = 'inline-block';
+      retryBtn.style.display = 'inline-block';
+      resultBox.style.display = 'none';
+      feedbackList.innerHTML = "";
+      // scroll to quiz
+      setTimeout(()=>{ quizArea.scrollIntoView({behavior:'smooth'}); }, 80);
+    }
+
+    // Start quiz
+    startBtn.addEventListener('click', () => {
+      const name = studentNameInput.value.trim();
+      if(!name){
+        alert("Isi nama siswa terlebih dahulu sebelum mulai.");
+        studentNameInput.focus();
+        return;
+      }
+      // render and hide start controls if desired
+      renderQuiz(true);
+      // focus first question
+      const firstRadio = document.querySelector('input[type="radio"]');
+      if(firstRadio) firstRadio.scrollIntoView({behavior:'smooth'});
+    });
+
+    // Shuffle options without resetting name
+    shuffleBtn.addEventListener('click', () => {
+      if(!confirm("Acak ulang pilihan jawaban? Pilihan yang sudah dipilih akan dihapus.")) return;
+      if(quizArea.style.display === 'none'){
+        renderQuiz(true);
+      }else{
+        renderQuiz(true);
+      }
+    });
+
+    // Check/grade quiz
+    checkBtn.addEventListener('click', () => {
+      const name = studentNameInput.value.trim();
+      if(!name){
+        alert("Isi nama siswa terlebih dahulu.");
+        studentNameInput.focus();
+        return;
+      }
+
+      let correctCount = 0;
+      let feedbackHTML = "";
+      rendered.forEach((rq, idx) => {
+        const radios = document.getElementsByName(rq.radioName);
+        let selected = null;
+        radios.forEach(r => { if(r.checked) selected = r.value; });
+
+        const qNo = idx + 1;
+        if(selected !== null && selected === rq.correct){
+          correctCount++;
+          feedbackHTML += `<div>Soal ${qNo}: <strong>Benar ✅</strong></div>`;
+        } else if (selected === null){
+          feedbackHTML += `<div>Soal ${qNo}: <strong style="color:var(--muted)">Belum dijawab</strong> — Jawaban benar: <em>${shorten(rq.correct)}</em></div>`;
+        } else {
+          feedbackHTML += `<div>Soal ${qNo}: <strong style="color:var(--danger)">Salah ❌</strong> — Jawaban benar: <em>${shorten(rq.correct)}</em></div>`;
+        }
+      });
+
+      const score = correctCount * 10;
+      const percent = Math.round((score/100)*100);
+      const passed = score >= 70;
+
+      // show result
+      resName.textContent = name;
+      resScore.textContent = `${score} / 100`;
+      resCorrect.textContent = `${correctCount} / ${rendered.length}`;
+      resPercent.textContent = `${percent}%`;
+      resStatus.textContent = passed ? "Lulus" : "Tidak Lulus";
+      resStatus.className = passed ? "pass" : "fail";
+      resScore.style.color = passed ? "var(--success)" : "var(--danger)";
+      feedbackList.innerHTML = feedbackHTML;
+      resultBox.style.display = 'block';
+      resultBox.scrollIntoView({behavior:'smooth'});
+
+      // optionally highlight correct answers (not required)
+    });
+
+    // Retry: clear selections and reshuffle
+    retryBtn.addEventListener('click', () => {
+      if(!confirm("Ulangi kuis? Semua jawaban akan dihapus dan pilihan akan diacak ulang.")) return;
+      renderQuiz(true);
+      studentNameInput.focus();
+    });
+
+    // Utility shorten long text
+    function shorten(text, max=80){
+      return text.length>max ? text.slice(0,max-1)+"…" : text;
+    }
+
+    // auto-render initial quiz with no name? we wait for Start button as requested
+    // but we can pre-shuffle to speed up after name entry if desired (not necessary)
+  </script>
+</body>
+</html>
